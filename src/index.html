@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image to Mosaic with Custom Colors</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <link href="./output.css" rel="stylesheet" />
+    <style>
+      /* Menambahkan batas ukuran untuk gambar */
+      #uploaded-image {
+        max-width: 100%; /* Menjaga gambar tidak melebihi lebar kontainer */
+        max-height: 500px; /* Menjaga gambar tidak lebih tinggi dari 500px */
+        min-width: 100px; /* Menjaga gambar tidak lebih kecil dari 100px */
+        min-height: 100px; /* Menjaga gambar tidak lebih kecil dari 100px */
+        object-fit: contain; /* Menjaga proporsi gambar */
+      }
+      /* Navbar Style */
+      .navbar {
+        background: linear-gradient(90deg, #0477F0 0%, #F24479 100%);
+      }
+      /* Footer Style */
+      .footer {
+        background: #F24479;
+        color: white;
+      }
+      .footer a {
+        color: #C224B9;
+        text-decoration: none;
+      }
+      .footer a:hover {
+        text-decoration: underline;
+      }
+      /* Modal Style */
+      .modal {
+        display: none; /* Hidden by default */
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+        align-items: center;
+        justify-content: center;
+      }
+      .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-height: 80vh; /* Batas tinggi maksimal modal */
+        overflow-y: auto; /* Scroll jika konten melebihi batas tinggi */
+      }
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+      }
+      .close:hover,
+      .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+      }
+    </style>
+</head>
+
+<body class="bg-gray-100 flex flex-col items-center py-10 font-sans">
+    <!-- Navbar -->
+    <nav class="navbar w-full py-4 px-8 mb-8 fixed top-0 left-0 z-50">
+        <div class="flex justify-between items-center">
+            <div class="text-white text-lg font-bold">IWa Tools</div>
+            <div class="space-x-4">
+                <a href="#info" class="text-white hover:text-gray-300">Informasi</a>
+                <a href="#donate" class="text-white hover:text-gray-300">Donate</a>
+                <a href="#follow" class="text-white hover:text-gray-300">Follow</a>
+            </div>
+        </div>
+    </nav>
+
+    <h1 class="text-3xl font-bold text-[#F24479] mb-8 mt-20">
+        Convert Image to Mosaic
+    </h1>
+
+    <!-- Controls for Custom Mosaic Size -->
+    <div id="controls" class="mb-6 flex space-x-4">
+        <div class="flex flex-col items-center">
+            <label for="rows-input" class="text-lg font-medium text-gray-700">Rows</label>
+            <input
+              type="number"
+              id="rows-input"
+              min="1"
+              value="10"
+              class="w-20 p-2 border-2 border-[#C224B9] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0477F0]"
+            />
+        </div>
+        <div class="flex flex-col items-center">
+            <label for="cols-input" class="text-lg font-medium text-gray-700">Columns</label>
+            <input
+              type="number"
+              id="cols-input"
+              min="1"
+              value="10"
+              class="w-20 p-2 border-2 border-[#C224B9] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0477F0]"
+            />
+        </div>
+        <button
+          id="apply-button"
+          class="bg-[#0477F0] text-white py-2 px-4 rounded-lg shadow-md hover:bg-[#F24479] transition duration-300 ease-in-out"
+        >
+          Apply
+        </button>
+        <button
+          id="regenerate-button"
+          class="bg-[#F24479] text-white py-2 p-4 rounded-lg shadow-md hover:bg-[#0477F0] transition duration-300 ease-in-out"
+        >
+          Regenerate
+        </button>
+    </div>
+    <!-- Description below the modal -->
+    <div id="description" class="mt-6 text-lg text-gray-700 hidden">
+        Mosaic ini dapat digunakan dengan total <span id="total-people"></span> orang dengan panjang = <span id="length"></span> dan lebar = <span id="width"></span>. Download file excel untuk mempermudah kamu dalam proses templating.
+      </div>
+    <!-- Controls for Custom Colors -->
+    <div id="color-controls" class="mb-6">
+        <div class="flex items-center mb-4">
+            <label
+              for="color-picker"
+              class="mr-4 text-lg font-medium text-gray-700"
+            >
+              Choose Colors
+            </label>
+            <input
+              type="color"
+              id="color-picker"
+              class="w-12 h-12 p-0 border-2 border-[#C224B9] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0477F0]"
+            />
+            <button
+              id="add-color-button"
+              class="ml-4 bg-[#0477F0] text-white py-2 px-4 rounded-lg shadow-md hover:bg-[#F24479] transition duration-300 ease-in-out"
+            >
+              Add Color
+            </button>
+        </div>
+        <div id="selected-colors" class="flex flex-wrap space-x-2"></div>
+    </div>
+
+    <!-- Form for Image Upload -->
+    <div id="image-upload" class="mb-6">
+        <input
+          type="file"
+          id="file-input"
+          accept="image/*"
+          multiple
+          class="w-full p-2 border-2 border-[#C224B9] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0477F0]"
+        />
+    </div>
+
+    <!-- Placeholder for Uploaded Images -->
+    <div id="uploaded-images" class="mb-6 flex flex-wrap space-x-4"></div>
+
+    <!-- Placeholder for Mosaic Images -->
+    <div
+      id="mosaic-images"
+      class="relative mb-6 flex flex-wrap space-x-4"
+    ></div>
+
+    <button
+      id="export-button"
+      class="mt-6 bg-[#F24479] text-white py-3 px-6 rounded-lg shadow-md hover:bg-[#C224B9] transition duration-300 ease-in-out"
+    >
+      Export to Excel
+    </button>
+
+    <!-- Loading Indicator -->
+    <div
+      id="loading"
+      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 hidden"
+    >
+      <div class="text-white text-xl">Loading...</div>
+    </div>
+
+    <!-- Description below Export Button -->
+    <div class="mt-6 text-gray-700">
+        Untuk tutorial cara penggunaan dan format excel agar memunculkan preview dapat menggunakan script ini. <a href="#" id="show-script" class="text-[#0477F0] hover:text-[#C224B9]">klik disini</a>
+    </div>
+
+
+
+    <!-- Modal -->
+    <div id="script-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <p>
+            1. Copy teks ini terlebih dahulu,
+            <pre class="bg-gray-300">
+                Sub ConvertToMosaic()
+                    Dim wsMosaic As Worksheet
+                    Dim wsSheet1 As Worksheet
+                    Dim lastRow As Long
+                    Dim i As Long
+                    Dim rowNum As Integer
+                    Dim colNum As Integer
+                    Dim colorCode As String
+                    
+                    ' Inisialisasi worksheet
+                    Set wsMosaic = ThisWorkbook.Sheets("Mosaic")
+                    Set wsSheet1 = ThisWorkbook.Sheets("Sheet1")
+                    
+                    ' Hapus semua format dari Sheet1 terlebih dahulu
+                    wsSheet1.Cells.ClearFormats
+                    
+                    ' Temukan baris terakhir pada sheet 'Mosaic'
+                    lastRow = wsMosaic.Cells(wsMosaic.Rows.Count, "A").End(xlUp).Row
+                    
+                    ' Loop melalui setiap baris di sheet 'Mosaic'
+                    For i = 2 To lastRow
+                        rowNum = wsMosaic.Cells(i, 1).Value
+                        colNum = wsMosaic.Cells(i, 2).Value
+                        colorCode = wsMosaic.Cells(i, 3).Value
+                        
+                        ' Mewarnai sel yang sesuai di Sheet1
+                        On Error Resume Next
+                        wsSheet1.Cells(rowNum, colNum).Interior.Color = RGB(Val("&H" & Mid(colorCode, 2, 2)), _
+                                                                            Val("&H" & Mid(colorCode, 4, 2)), _
+                                                                            Val("&H" & Mid(colorCode, 6, 2)))
+                        On Error GoTo 0
+                    Next i
+                End Sub
+                            </pre>
+
+            2. Setelah itu buka folder excel yang telah di download, <br>
+            3. Klik <span class="bg-gray-300">ALT + F11</span> <br>
+            4. Setelah dialog muncul, klik menu insert dan pilih module <br>
+            <img src="img/1.jpeg" alt="Module">
+            5. Masukkan script yang sudah disediakan tersebut. <br>
+            <img src="img/2.jpeg" alt="script">
+            6. Kamu dapat mengubah 'ConvertToMosaic' menjadi 'Pola1' atau sebagainya untuk mempermudah. <br>
+            7. Kamu juga dapat menyesuaikan Worksheet
+            <pre class="bg-gray-300">    ' Inisialisasi worksheet
+                Set wsMosaic = ThisWorkbook.Sheets("Mosaic")
+                Set wsSheet1 = ThisWorkbook.Sheets("Sheet1")</pre>
+                sesuai dengan yang kamu gunakan. <br>
+            8. Simpan perubahan dengan tombol <span class="bg-gray-300">Ctrl + S</span>, Setelah itu silahkan close. <br>
+            9. Kemudian, klik <span class="bg-gray-300">Ctrl + F8</span> untuk mengaktifkan script. <br>
+            <img src="img/3.jpeg" alt="script">
+            10. Jalankan pada Worksheet yang sudah kamu pilih. <br>
+            11. Selesai.
+
+            </p>
+            
+        </div>
+    </div>
+
+
+
+    <!-- Footer -->
+    <footer class="footer w-full py-4 px-8 text-center text-white mt-12">
+        <p>© 2024 IWa Tools. All rights reserved.</p>
+        <p><a href="#contact" class="hover:underline">Contact Us</a></p>
+    </footer>
+
+    <script src="system.js"></script>
+
+    <script>
+      // Get modal elements
+      var modal = document.getElementById("script-modal");
+      var btn = document.getElementById("show-script");
+      var span = document.getElementsByClassName("close")[0];
+
+      // Show the modal
+      btn.onclick = function() {
+        modal.style.display = "flex";
+      }
+
+      // Close the modal
+      span.onclick = function() {
+        modal.style.display = "none";
+      }
+
+      // Close the modal when clicking outside of it
+      window.onclick = function(event) {
+        if (event.target == modal) {
+          modal.style.display = "none";
+        }
+      }
+    </script>
+</body>
+</html>

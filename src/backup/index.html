@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image to Mosaic with Custom Colors</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link href="./output.css" rel="stylesheet" />
+    <style>
+      /* Menambahkan batas ukuran untuk gambar */
+      #uploaded-image {
+        max-width: 100%; /* Menjaga gambar tidak melebihi lebar kontainer */
+        max-height: 500px; /* Menjaga gambar tidak lebih tinggi dari 500px */
+        min-width: 100px; /* Menjaga gambar tidak lebih kecil dari 100px */
+        min-height: 100px; /* Menjaga gambar tidak lebih kecil dari 100px */
+        object-fit: contain; /* Menjaga proporsi gambar */
+      }
+    </style>
+</head>
+
+<body class="bg-gray-100 flex flex-col items-center py-10 font-sans">
+    <h1 class="text-3xl font-bold text-[#F24479] mb-8">
+        Convert Image to Mosaic
+    </h1>
+
+    <!-- Controls for Custom Mosaic Size -->
+    <div id="controls" class="mb-6 flex space-x-4">
+        <div class="flex flex-col items-center">
+            <label for="rows-input" class="text-lg font-medium text-gray-700">Rows</label>
+            <input
+              type="number"
+              id="rows-input"
+              min="1"
+              value="10"
+              class="w-20 p-2 border-2 border-[#C224B9] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0477F0]"
+            />
+        </div>
+        <div class="flex flex-col items-center">
+            <label for="cols-input" class="text-lg font-medium text-gray-700">Columns</label>
+            <input
+              type="number"
+              id="cols-input"
+              min="1"
+              value="10"
+              class="w-20 p-2 border-2 border-[#C224B9] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0477F0]"
+            />
+        </div>
+        <button
+          id="apply-button"
+          class="bg-[#0477F0] text-white py-2 px-4 rounded-lg shadow-md hover:bg-[#F24479] transition duration-300 ease-in-out"
+        >
+          Apply
+        </button>
+        <button
+          id="regenerate-button"
+          class="bg-[#F24479] text-white py-2 p-4 rounded-lg shadow-md hover:bg-[#0477F0] transition duration-300 ease-in-out"
+        >
+          Regenerate
+        </button>
+    </div>
+    <!-- Description below the modal -->
+    <div id="description" class="mt-6 text-lg text-gray-700 hidden">
+        Mosaic ini dapat digunakan dengan total <span id="total-people"></span> orang dengan panjang = <span id="length"></span> dan lebar = <span id="width"></span>. Download file excel untuk mempermudah kamu dalam proses templating.
+      </div>
+    <!-- Controls for Custom Colors -->
+    <div id="color-controls" class="mb-6">
+        <div class="flex items-center mb-4">
+            <label
+              for="color-picker"
+              class="mr-4 text-lg font-medium text-gray-700"
+            >
+              Choose Colors
+            </label>
+            <input
+              type="color"
+              id="color-picker"
+              class="w-12 h-12 p-0 border-2 border-[#C224B9] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0477F0]"
+            />
+            <button
+              id="add-color-button"
+              class="ml-4 bg-[#0477F0] text-white py-2 px-4 rounded-lg shadow-md hover:bg-[#F24479] transition duration-300 ease-in-out"
+            >
+              Add Color
+            </button>
+        </div>
+        <div id="selected-colors" class="flex flex-wrap space-x-2"></div>
+    </div>
+
+    <!-- Form for Image Upload -->
+    <div id="image-upload" class="mb-6">
+        <input
+          type="file"
+          id="file-input"
+          accept="image/*"
+          multiple
+          class="w-full p-2 border-2 border-[#C224B9] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0477F0]"
+        />
+    </div>
+
+    <!-- Placeholder for Uploaded Images -->
+    <div id="uploaded-images" class="mb-6 flex flex-wrap space-x-4"></div>
+
+    <!-- Placeholder for Mosaic Images -->
+    <div
+      id="mosaic-images"
+      class="relative mb-6 flex flex-wrap space-x-4"
+    ></div>
+
+    <button
+      id="export-button"
+      class="mt-6 bg-[#F24479] text-white py-3 px-6 rounded-lg shadow-md hover:bg-[#C224B9] transition duration-300 ease-in-out"
+    >
+      Export to Excel
+    </button>
+
+    <!-- Loading Indicator -->
+    <div
+      id="loading"
+      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 hidden"
+    >
+      <div class="text-white text-xl">Loading...</div>
+    </div>
+
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="system.js"></script>
+</body>
+</html>
